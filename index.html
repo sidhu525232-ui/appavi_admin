@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APPAVI KILL MIC · Admin</title>
+<style>
+  :root { --gold:#00C8FF; --gold2:#7DF3FF; --red:#FF1744; --bg:#03060D; --card:#0A1120; --line:#1C2B40; --mut:#9FB3C8; --ok:#3DDC84; --warn:#FFB300; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:#fff; font-family:Georgia,'Times New Roman',serif; }
+  h1,h2 { letter-spacing:.18em; font-weight:700; margin:0; }
+  .gold { color:var(--gold); }
+  .wrap { max-width:1200px; margin:0 auto; padding:20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:16px; }
+  input, select, button { font:inherit; border-radius:12px; border:1px solid var(--line); background:#0B1424; color:#fff; padding:11px 14px; }
+  input:focus, select:focus { outline:none; border-color:var(--gold); }
+  button { cursor:pointer; }
+  .btn-gold { background:linear-gradient(90deg,var(--gold2),#1E90FF); color:#000; font-weight:700; letter-spacing:.12em; border:none; }
+  .btn-sm { padding:6px 10px; font-size:12px; margin:2px; }
+  .btn-ok { border-color:var(--ok); color:var(--ok); }
+  .btn-warn { border-color:var(--warn); color:var(--warn); }
+  .btn-red { border-color:var(--red); color:var(--red); }
+  #login { max-width:380px; margin:12vh auto; text-align:center; }
+  #login input { width:100%; margin:8px 0; }
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; margin-bottom:16px; }
+  .stat { text-align:center; } .stat b { display:block; font-size:28px; color:var(--gold); }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .row input { flex:1; min-width:160px; }
+  .tablewrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; color:var(--gold); letter-spacing:.12em; font-weight:400; padding:8px; border-bottom:1px solid var(--line); }
+  td { padding:8px; border-bottom:1px solid #12203a; vertical-align:middle; }
+  .key { font-family:monospace; letter-spacing:.05em; cursor:pointer; }
+  .badge { padding:3px 10px; border-radius:99px; font-size:11px; letter-spacing:.1em; border:1px solid; }
+  .st-unused { color:var(--mut); } .st-pending { color:var(--warn); } .st-approved { color:var(--ok); }
+  .st-expired,.st-revoked { color:var(--red); }
+  #msg { color:var(--red); min-height:20px; margin-top:6px; font-size:13px; }
+  small { color:var(--mut); }
+.card{box-shadow:0 0 22px #00c8ff1f}
+  h1,h2{text-shadow:0 0 14px #00c8ffaa}
+  .btn-gold{box-shadow:0 0 18px #00c8ff88;color:#001018}
+  input:focus,select:focus{box-shadow:0 0 12px #00c8ff77}
+  body{background:radial-gradient(circle at 50% -10%,#06304a 0%,#03060D 55%)}
+</style>
+</head>
+<body>
+
+<div id="setup" class="card" style="max-width:420px;margin:10vh auto" hidden>
+  <h1 class="gold">SERVER SETUP</h1>
+  <p><small>Paste the three values from your Firebase web app. Saved only in this browser.</small></p>
+  <input id="cfgKey" placeholder="apiKey" style="width:100%;margin:6px 0">
+  <input id="cfgProject" placeholder="projectId" style="width:100%;margin:6px 0">
+  <input id="cfgApp" placeholder="appId" style="width:100%;margin:6px 0">
+  <button id="cfgSave" class="btn-gold" style="width:100%;margin-top:8px">SAVE</button>
+</div>
+
+<div id="login" class="card">
+  <h1 class="gold">APPAVI KILL MIC</h1>
+  <p><small>ADMIN CONSOLE</small></p>
+  <input id="email" type="email" placeholder="Admin email" autocomplete="username">
+  <input id="pass" type="password" placeholder="Password" autocomplete="current-password">
+  <button id="loginBtn" class="btn-gold" style="width:100%;margin-top:8px">SIGN IN</button>
+  <div id="msg"></div>
+</div>
+
+<div id="app" class="wrap" hidden>
+  <header>
+    <h2 class="gold">APPAVI KILL MIC <small>· ADMIN</small></h2>
+    <span><button id="srvBtn">Server</button> <button id="logoutBtn">Sign out</button></span>
+  </header>
+
+  <div class="stats">
+    <div class="card stat"><b id="s-total">0</b>TOTAL</div>
+    <div class="card stat"><b id="s-pending">0</b>PENDING</div>
+    <div class="card stat"><b id="s-approved">0</b>ACTIVE</div>
+    <div class="card stat"><b id="s-expired">0</b>EXPIRED / REVOKED</div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:14px;margin-bottom:12px" class="gold">GENERATE KEY</h2>
+    <div class="row">
+      <input id="note" placeholder="Note / customer name">
+      <select id="days">
+        <option value="1">1 day</option>
+        <option value="7">7 days</option>
+        <option value="30" selected>30 days</option>
+        <option value="90">90 days</option>
+        <option value="365">365 days</option>
+        <option value="0">Lifetime</option>
+      </select>
+      <button id="genBtn" class="btn-gold">GENERATE</button>
+    </div>
+    <small>Time starts when YOU press Approve. One key = one device.</small>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <h2 style="font-size:14px" class="gold">KEYS</h2>
+      <input id="search" placeholder="Search key / note / device">
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>KEY</th><th>NOTE</th><th>STATUS</th><th>DEVICE</th><th>ACCESS</th><th>ACTIONS</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const $ = (id) => document.getElementById(id);
+let cfg = null;
+try { cfg = JSON.parse(localStorage.getItem("fbcfg")); } catch (_) {}
+const firebaseConfig = cfg || { apiKey: "x", authDomain: "x.firebaseapp.com", projectId: "x", appId: "x" };
+if (!cfg) { $("login").hidden = true; $("setup").hidden = false; }
+$("cfgSave").onclick = () => {
+  const k = $("cfgKey").value.trim(), p = $("cfgProject").value.trim(), a = $("cfgApp").value.trim();
+  if (!k || !p || !a) return;
+  localStorage.setItem("fbcfg", JSON.stringify({ apiKey: k, authDomain: p + ".firebaseapp.com", projectId: p, appId: a }));
+  location.reload();
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const DAY = 86400000;
+let allKeys = [];
+let unsub = null;
+
+$("loginBtn").onclick = async () => {
+  $("msg").textContent = "";
+  try { await signInWithEmailAndPassword(auth, $("email").value.trim(), $("pass").value); }
+  catch (e) { $("msg").textContent = "Login failed: " + e.code; }
+};
+$("pass").addEventListener("keydown", (e) => { if (e.key === "Enter") $("loginBtn").click(); });
+$("logoutBtn").onclick = () => signOut(auth);
+$("srvBtn").onclick = () => { if (confirm("Change Firebase server settings?")) { localStorage.removeItem("fbcfg"); location.reload(); } };
+
+onAuthStateChanged(auth, (user) => {
+  if (!cfg) return;
+  $("login").hidden = !!user;
+  $("app").hidden = !user;
+  if (unsub) { unsub(); unsub = null; }
+  if (user) {
+    unsub = onSnapshot(collection(db, "keys"), (snap) => {
+      allKeys = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      allKeys.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      render();
+    }, (err) => { alert("Cannot read keys: " + err.code + " (check firestore.rules and admin email)"); });
+  }
+});
+
+function newKey() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const buf = new Uint32Array(20);
+  crypto.getRandomValues(buf);
+  const s = Array.from(buf, (n) => chars[n % chars.length]).join("");
+  return s.match(/.{5}/g).join("-");
+}
+
+$("genBtn").onclick = async () => {
+  const key = newKey();
+  await setDoc(doc(db, "keys", key), {
+    status: "unused", deviceId: "", requestedAt: 0, approvedAt: 0, expiresAt: 0,
+    durationDays: parseInt($("days").value, 10), note: $("note").value.trim(),
+    createdAt: Date.now()
+  });
+  $("note").value = "";
+  try { await navigator.clipboard.writeText(key); } catch (_) {}
+  alert("Key created (copied to clipboard):\n\n" + key);
+};
+
+function fmtExp(k) {
+  if (k.status === "approved") {
+    if (!k.expiresAt) return "Lifetime";
+    const left = k.expiresAt - Date.now();
+    if (left <= 0) return "Expired";
+    const d = Math.floor(left / DAY), h = Math.floor((left % DAY) / 3600000);
+    return d + "d " + h + "h left";
+  }
+  if (k.status === "expired") return "Expired";
+  return k.durationDays ? k.durationDays + " days (starts on approve)" : "Lifetime (starts on approve)";
+}
+
+function effStatus(k) {
+  if (k.status === "approved" && k.expiresAt && k.expiresAt <= Date.now()) return "expired";
+  return k.status;
+}
+
+function btn(label, cls, act, key) {
+  const b = document.createElement("button");
+  b.className = "btn-sm " + cls; b.textContent = label;
+  b.dataset.act = act; b.dataset.key = key;
+  return b;
+}
+
+function render() {
+  const q = $("search").value.trim().toLowerCase();
+  const tb = $("rows");
+  tb.textContent = "";
+  let c = { total: 0, pending: 0, approved: 0, expired: 0 };
+  for (const k of allKeys) {
+    const st = effStatus(k);
+    c.total++;
+    if (st === "pending") c.pending++;
+    else if (st === "approved") c.approved++;
+    else if (st === "expired" || st === "revoked") c.expired++;
+    const hay = (k.id + " " + (k.note || "") + " " + (k.deviceId || "")).toLowerCase();
+    if (q && !hay.includes(q)) continue;
+
+    const tr = document.createElement("tr");
+    const td = (node) => { const t = document.createElement("td"); if (typeof node === "string") t.textContent = node; else t.appendChild(node); tr.appendChild(t); return t; };
+    const keyEl = document.createElement("span"); keyEl.className = "key"; keyEl.textContent = k.id; keyEl.title = "Click to copy";
+    keyEl.onclick = () => navigator.clipboard.writeText(k.id);
+    td(keyEl);
+    td(k.note || "");
+    const badge = document.createElement("span"); badge.className = "badge st-" + st; badge.textContent = st.toUpperCase();
+    td(badge);
+    td(k.deviceId || "-");
+    td(fmtExp(k));
+    const act = td("");
+    if (st === "pending") act.appendChild(btn("Approve", "btn-ok", "approve", k.id));
+    if (st === "expired" && k.status === "approved") act.appendChild(btn("Renew", "btn-ok", "approve", k.id));
+    if (st === "approved") {
+      act.appendChild(btn("+7d", "", "extend7", k.id));
+      act.appendChild(btn("+30d", "", "extend30", k.id));
+      act.appendChild(btn("Expire now", "btn-warn", "expire", k.id));
+    }
+    if (st === "pending" || st === "approved" || st === "expired") act.appendChild(btn("Revoke", "btn-red", "revoke", k.id));
+    if (k.deviceId) act.appendChild(btn("Reset device", "", "reset", k.id));
+    act.appendChild(btn("Delete", "btn-red", "delete", k.id));
+    tb.appendChild(tr);
+  }
+  $("s-total").textContent = c.total; $("s-pending").textContent = c.pending;
+  $("s-approved").textContent = c.approved; $("s-expired").textContent = c.expired;
+}
+$("search").oninput = render;
+
+$("rows").addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-act]");
+  if (!b) return;
+  const id = b.dataset.key, act = b.dataset.act;
+  const k = allKeys.find((x) => x.id === id); if (!k) return;
+  const ref = doc(db, "keys", id);
+  const now = Date.now();
+  try {
+    if (act === "approve") {
+      const days = k.durationDays || 0;
+      await updateDoc(ref, { status: "approved", approvedAt: now, expiresAt: days > 0 ? now + days * DAY : 0 });
+    } else if (act === "extend7" || act === "extend30") {
+      if (!k.expiresAt) { alert("Lifetime key, nothing to extend."); return; }
+      const add = (act === "extend7" ? 7 : 30) * DAY;
+      await updateDoc(ref, { status: "approved", expiresAt: Math.max(now, k.expiresAt) + add });
+    } else if (act === "expire") {
+      if (!confirm("Expire this device now? The app locks within about a minute.")) return;
+      await updateDoc(ref, { status: "expired", expiresAt: now });
+    } else if (act === "revoke") {
+      if (!confirm("Revoke this key? The app locks within about a minute.")) return;
+      await updateDoc(ref, { status: "revoked" });
+    } else if (act === "reset") {
+      if (!confirm("Unbind the device so this key can be used on another phone?")) return;
+      await updateDoc(ref, { deviceId: "", status: "unused", requestedAt: 0, approvedAt: 0, expiresAt: 0 });
+    } else if (act === "delete") {
+      if (!confirm("Delete this key permanently?")) return;
+      await deleteDoc(ref);
+    }
+  } catch (err) { alert("Failed: " + err.code); }
+});
+</script>
+</body>
+  </html>
+  
